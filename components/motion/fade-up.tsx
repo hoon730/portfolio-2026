@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ReactNode } from "react";
+import { EASE_OUT_EXPO } from "@/lib/motion";
 
 interface FadeUpProps {
   children: ReactNode;
@@ -12,10 +13,10 @@ interface FadeUpProps {
 export function FadeUp({ children, delay = 0, className }: FadeUpProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 32 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay }}
+      transition={{ duration: 0.8, ease: EASE_OUT_EXPO, delay }}
       className={className}
     >
       {children}

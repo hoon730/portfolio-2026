@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import { Project } from "@/content/projects";
+import { Reveal } from "@/components/motion/reveal";
+import { EASE_OUT_EXPO } from "@/lib/motion";
 
 interface SelectedWorkCardProps {
   project: Project;
@@ -14,7 +16,7 @@ export function SelectedWorkCard({ project }: SelectedWorkCardProps) {
       initial={{ opacity: 0, y: 32 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.8, ease: EASE_OUT_EXPO }}
     >
       <div className="flex flex-col gap-8 md:flex-row md:items-start md:gap-16">
         <div className="flex-1">
@@ -22,13 +24,11 @@ export function SelectedWorkCard({ project }: SelectedWorkCardProps) {
             <span className="text-sm font-medium uppercase tracking-[0.15em] text-muted">
               {project.number}
             </span>
-            <motion.h2
-              className="text-[clamp(2.5rem,7vw,6rem)] font-black leading-none tracking-tight"
-              whileHover={{ x: 6 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-            >
-              {project.title}
-            </motion.h2>
+            <Reveal className="pb-[0.04em] transition-transform duration-300 ease-out group-hover:translate-x-2">
+              <h2 className="text-[clamp(2.5rem,7vw,6rem)] font-black leading-none tracking-tight transition-colors group-hover:text-accent">
+                {project.title}
+              </h2>
+            </Reveal>
           </div>
 
           <p className="mt-4 text-lg font-medium md:text-xl">{project.subtitle}</p>
