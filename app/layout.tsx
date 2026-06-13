@@ -3,6 +3,8 @@ import { Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "lenis/dist/lenis.css";
 import { SmoothScroll } from "@/components/smooth-scroll";
+import { ColorModeProvider } from "@/lib/color-mode";
+import { SiteShell } from "@/components/site-shell";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -17,16 +19,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html
-      lang="ko"
-      className={`${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
-        <SmoothScroll>{children}</SmoothScroll>
+    <html lang="ko" className={geistMono.variable}>
+      {/* night-mode as initial class prevents flash before client JS hydrates */}
+      <body className="ultra-mode">
+        <ColorModeProvider>
+          <SmoothScroll>
+            <SiteShell>{children}</SiteShell>
+          </SmoothScroll>
+        </ColorModeProvider>
       </body>
     </html>
   );

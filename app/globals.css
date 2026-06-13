@@ -2,16 +2,51 @@
 @import "pretendard/dist/web/static/pretendard.css";
 
 @theme {
+  /* ultra/default: 사용자 시그니처 블루 */
   --color-background: #1d4ed8;
   --color-foreground: #0a0a0a;
-  --color-accent: #ffffff;
-  --color-muted: rgba(0, 0, 0, 0.55);
-  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --color-accent:     #ffffff;
+  --color-muted:      rgba(0, 0, 0, 0.55);
+
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
+/* ── Color mode overrides ── */
+body.night-mode {
+  --color-background: #0a0a0a;
+  --color-foreground: #f2f2f2;
+  --color-accent:     #f2f2f2;
+  --color-muted:      rgba(242, 242, 242, 0.45);
+}
+
+body.light-mode {
+  --color-background: #f0f0ed;
+  --color-foreground: #0a0a0a;
+  --color-accent:     #0a0a0a;
+  --color-muted:      rgba(10, 10, 10, 0.45);
+}
+
+body.ultra-mode {
+  --color-background: #1d4ed8;
+  --color-foreground: #0a0a0a;
+  --color-accent:     #ffffff;
+  --color-muted:      rgba(0, 0, 0, 0.55);
+}
+
+/* ── Base ── */
+html {
+  height: 100%;
+  background-color: var(--color-background);
+}
+
 body {
-  background: var(--color-background);
+  min-height: 100%;
+  background-color: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans);
+  transition:
+    background-color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    color            0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
