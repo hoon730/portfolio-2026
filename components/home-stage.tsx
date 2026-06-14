@@ -10,8 +10,8 @@ function yearOf(period: string): string {
   return m ? m[0] : "2025";
 }
 
-const REST_DEG = -52; // lying back
-const FLAT_DEG = -4; // stood up when focused
+const REST_DEG = -44; // lying back (vanholtz baseline)
+const FLAT_DEG = -28; // gently flatten the focused line
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
@@ -47,7 +47,7 @@ export function HomeStage() {
         const dist = Math.min(Math.abs(itemCenter - center) / threshold, 1);
         const focus = easeInOut(1 - dist); // 1 at center → 0 far
         const deg = lerp(REST_DEG, FLAT_DEG, focus);
-        const opacity = lerp(0.35, 1, focus);
+        const opacity = lerp(0.62, 1, focus);
         el.style.transform = `rotateY(${deg.toFixed(2)}deg)`;
         el.style.opacity = opacity.toFixed(3);
       }
@@ -71,9 +71,10 @@ export function HomeStage() {
         style={{
           listStyle: "none",
           margin: 0,
-          padding: "46vh 6vw 46vh 0",
+          padding: "26vh 6vw 30vh 0",
           textAlign: "right",
           transformStyle: "preserve-3d",
+          pointerEvents: "none",
         }}
       >
         {projects.map((project, i) => (
@@ -83,6 +84,7 @@ export function HomeStage() {
               transformStyle: "preserve-3d",
               lineHeight: "0.86",
               marginBottom: i < projects.length - 1 ? "4vh" : 0,
+              pointerEvents: "none",
             }}
           >
             <div
@@ -94,7 +96,8 @@ export function HomeStage() {
                 transformOrigin: "right center",
                 transformStyle: "preserve-3d",
                 willChange: "transform, opacity",
-                opacity: 0.35,
+                opacity: 0.62,
+                pointerEvents: "none",
               }}
             >
               <TransitionLink
@@ -110,6 +113,7 @@ export function HomeStage() {
                   letterSpacing: "0.01em",
                   lineHeight: 0.9,
                   whiteSpace: "nowrap",
+                  pointerEvents: "auto",
                 }}
               >
                 {/* decorative slash tick (vanholtz ::after) */}
