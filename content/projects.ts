@@ -2,6 +2,8 @@ export interface Project {
   slug: string;
   number: string;
   title: string;
+  /** title split into lines for the giant home list (defaults to [title]) */
+  titleLines?: string[];
   subtitle: string;
   category: "selected" | "more";
   role: string;
@@ -17,6 +19,7 @@ export const projects: Project[] = [
     slug: "futsalmanager",
     number: "01",
     title: "FutsalManager",
+    titleLines: ["Futsal", "Manager"],
     subtitle: "공정한 팀, 운영의 자동화",
     category: "selected",
     role: "단독 개발",
@@ -41,6 +44,7 @@ export const projects: Project[] = [
     slug: "aurora",
     number: "03",
     title: "Aurora Plus",
+    titleLines: ["Aurora", "Plus"],
     subtitle: "OTT 콘텐츠 탐색 플랫폼",
     category: "more",
     role: "단독 개발",

@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { EASE_OUT_EXPO } from "@/lib/motion";
 
 interface PageTransitionCtx {
   navigateTo: (href: string) => void;
@@ -25,26 +26,18 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function PageTransitionProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  // intro curtain covers the screen on first paint, then lifts
-  const [opacity, setOpacity] = useState(1);
-  const [visible, setVisible] = useState(true);
-  const [duration, setDuration] = useState(0.7);
+  // curtain is always mounted; only its opacity changes (smooth both ways)
+  const [opacity, setOpacity] = useState(1); // covers on first paint
+  const [coverDur, setCoverDur] = useState(0.7);
   const busy = useRef(false);
 
-  // ── intro reveal on mount ──
+  // ── intro: lift the curtain on mount ──
   useEffect(() => {
-    let t1: ReturnType<typeof setTimeout>;
-    let t2: ReturnType<typeof setTimeout>;
-    // hold the curtain briefly, then fade it out
-    t1 = setTimeout(() => {
-      setDuration(0.7);
+    const t = setTimeout(() => {
+      setCoverDur(0.7);
       setOpacity(0);
     }, 120);
-    t2 = setTimeout(() => setVisible(false), 950);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
+    return () => clearTimeout(t);
   }, []);
 
   const navigateTo = useCallback(
@@ -52,22 +45,20 @@ export function PageTransitionProvider({ children }: { children: React.ReactNode
       if (busy.current) return;
       busy.current = true;
 
-      // 1. Show curtain
-      setVisible(true);
-      setDuration(0.45);
+      // 1. cover (fade curtain in)
+      setCoverDur(0.5);
       setOpacity(1);
-      await sleep(480);
+      await sleep(560);
 
-      // 2. Navigate
+      // 2. swap the page underneath the cover
       router.push(href);
-      await sleep(280);
+      await sleep(420);
 
-      // 3. Hide curtain
-      setDuration(0.6);
+      // 3. reveal (fade curtain out)
+      setCoverDur(0.7);
       setOpacity(0);
-      await sleep(650);
+      await sleep(720);
 
-      setVisible(false);
       busy.current = false;
     },
     [router]
@@ -76,14 +67,18 @@ export function PageTransitionProvider({ children }: { children: React.ReactNode
   return (
     <PageTransitionContext.Provider value={{ navigateTo, isTransitioning: busy.current }}>
       {children}
-      {visible && (
-        <motion.div
-          className="fixed inset-0 pointer-events-none"
-          style={{ backgroundColor: "var(--color-background)", zIndex: 200 }}
-          animate={{ opacity }}
-          transition={{ duration, ease: [0.16, 1, 0.3, 1] }}
-        />
-      )}
+      <motion.div
+        aria-hidden
+        className="fixed inset-0"
+        style={{
+          backgroundColor: "var(--color-background)",
+          zIndex: 200,
+          pointerEvents: "none",
+        }}
+        initial={false}
+        animate={{ opacity }}
+        transition={{ duration: coverDur, ease: EASE_OUT_EXPO }}
+      />
     </PageTransitionContext.Provider>
   );
 }

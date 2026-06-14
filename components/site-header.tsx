@@ -45,27 +45,28 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
   const isHome = pathname === "/";
   const { navigateTo } = usePageTransition();
 
-  // vanholtz: in ultra/night the UI text is light, in light-mode it's dark
+  // vanholtz: light text on ultra/night, dark text on light-mode
   const ui = mode === "light-mode" ? "#0a0a0a" : "#f2f2f2";
 
   return (
     <>
-      {/* ── Identity block: logo + meta + nav. Sits bottom-left on home, slides to top-left on work pages ── */}
+      {/* ── Identity block: sits bottom-left on home, slides up to top-left on work pages ── */}
       <div
         className="fixed left-[3.75rem] top-0 z-40"
         style={{
+          width: "min(640px, 64vw)",
           pointerEvents: "none",
           transform: isHome
-            ? "translateY(calc(100vh - 100% - 9vh))"
+            ? "translateY(calc(100vh - 100% - 7vh))"
             : "translateY(7.5vh)",
           transition: MOVE,
         }}
       >
-        {/* Logo — YEOM / DONG / HOON, stacked */}
+        {/* Logo — YEOM / DONG / HOON */}
         <a
           href="/"
           aria-label="YEOM DONG HOON — home"
-          className="block uppercase"
+          className="inline-block uppercase"
           style={{
             pointerEvents: "auto",
             color: ui,
@@ -85,7 +86,7 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
           <SlideUp delay={0.66}>HOON</SlideUp>
         </a>
 
-        {/* Meta — role + email (home only; collapses on work pages) */}
+        {/* Meta + nav row — fades/collapses on work pages */}
         <motion.div
           initial={false}
           animate={{ opacity: isHome ? 1 : 0, height: isHome ? "auto" : 0 }}
@@ -93,46 +94,54 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
           style={{ overflow: "hidden" }}
         >
           <div
-            className="mt-5 text-[0.8rem] uppercase tracking-[0.08em] leading-relaxed"
-            style={{ color: ui, opacity: 0.7, pointerEvents: "auto" }}
+            className="mt-7 flex items-end justify-between gap-6 text-[0.8rem] leading-[1.5]"
+            style={{ color: ui, pointerEvents: "auto" }}
           >
-            <SlideUp delay={0.74}>프론트엔드 개발자 · 서울</SlideUp>
-            <SlideUp delay={0.8}>
-              <a href="mailto:ehdgns730@gmail.com" className="lowercase">
-                ehdgns730@gmail.com
-              </a>
-            </SlideUp>
+            {/* role */}
+            <div style={{ opacity: 0.75 }}>
+              <SlideUp delay={0.74}>프론트엔드</SlideUp>
+              <SlideUp delay={0.78}>개발자</SlideUp>
+            </div>
+
+            {/* location + email */}
+            <div style={{ opacity: 0.75 }}>
+              <SlideUp delay={0.8}>서울</SlideUp>
+              <SlideUp delay={0.84}>
+                <a href="mailto:ehdgns730@gmail.com">ehdgns730@gmail.com</a>
+              </SlideUp>
+            </div>
+
+            {/* nav — 01 about / 02 contact, right-aligned */}
+            <nav className="ml-auto flex flex-col gap-1 text-right">
+              <SlideUp delay={0.88}>
+                <button
+                  onClick={onAboutToggle}
+                  className="inline-flex items-center gap-2 transition-opacity hover:opacity-60"
+                >
+                  <span
+                    style={{ opacity: 0.5, fontFamily: "var(--font-mono), monospace" }}
+                  >
+                    01
+                  </span>
+                  <span>about</span>
+                </button>
+              </SlideUp>
+              <SlideUp delay={0.92}>
+                <a
+                  href="mailto:ehdgns730@gmail.com"
+                  className="inline-flex items-center gap-2 transition-opacity hover:opacity-60"
+                >
+                  <span
+                    style={{ opacity: 0.5, fontFamily: "var(--font-mono), monospace" }}
+                  >
+                    02
+                  </span>
+                  <span>contact</span>
+                </a>
+              </SlideUp>
+            </nav>
           </div>
         </motion.div>
-
-        {/* Nav — 01 about / 02 contact */}
-        <nav
-          className="mt-5 flex flex-col gap-1.5 text-[0.85rem] tracking-[0.04em]"
-          style={{ color: ui, pointerEvents: "auto" }}
-        >
-          <SlideUp delay={0.86}>
-            <button
-              onClick={onAboutToggle}
-              className="group flex items-center gap-2 transition-opacity hover:opacity-60"
-            >
-              <span style={{ opacity: 0.5, fontFamily: "var(--font-mono), monospace" }}>
-                01
-              </span>
-              <span>about</span>
-            </button>
-          </SlideUp>
-          <SlideUp delay={0.92}>
-            <a
-              href="mailto:ehdgns730@gmail.com"
-              className="group flex items-center gap-2 transition-opacity hover:opacity-60"
-            >
-              <span style={{ opacity: 0.5, fontFamily: "var(--font-mono), monospace" }}>
-                02
-              </span>
-              <span>contact</span>
-            </a>
-          </SlideUp>
-        </nav>
       </div>
 
       {/* ── Color modes — fixed bottom-right ── */}

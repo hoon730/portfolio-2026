@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { projects } from "@/content/projects";
 import { usePageTransition } from "@/lib/page-transition";
 
@@ -10,8 +10,8 @@ function yearOf(period: string): string {
 }
 
 const REST_DEG = -45; // lying back (vanholtz baseline)
-const FLAT_DEG = -28; // gentle scroll flatten near center
-const HOVER_DEG = -7; // hovered line stands up to face the viewer
+const FLAT_DEG = -30; // gentle scroll flatten near center
+const HOVER_DEG = -38; // subtle stand-up on hover (close to rest)
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -27,11 +27,12 @@ export function HomeStage() {
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const rafRef = useRef<number>(0);
   const hovered = useRef<number | null>(null);
-  const aRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const startTime = useRef<number>(0);
   const curDeg = useRef<number[]>(projects.map(() => REST_DEG));
   const curOp = useRef<number[]>(projects.map(() => 0));
   const originY = useRef(50);
+  // hoverIdx drives the text style (outline vs solid) — infrequent, re-render is cheap
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -50,21 +51,15 @@ export function HomeStage() {
       originY.current = lerp(originY.current, targetOY, 0.08);
       viewport.style.perspectiveOrigin = `50% ${originY.current.toFixed(2)}%`;
 
-      const isHovering = hovered.current !== null;
       const threshold = vh * 0.42;
 
       itemRefs.current.forEach((el, i) => {
         if (!el) return;
         let degT: number;
         let opT: number;
-        if (isHovering) {
-          if (hovered.current === i) {
-            degT = HOVER_DEG;
-            opT = 1;
-          } else {
-            degT = REST_DEG;
-            opT = 0.55; // outlined siblings stay visible
-          }
+        if (hovered.current === i) {
+          degT = HOVER_DEG; // only the hovered line moves, subtly
+          opT = 1;
         } else {
           const r = el.getBoundingClientRect();
           const itemCenter = r.top + r.height / 2;
@@ -74,8 +69,9 @@ export function HomeStage() {
           opT = lerp(0.62, 1, focus);
         }
 
-        curDeg.current[i] = lerp(curDeg.current[i], degT, 0.12);
-        curOp.current[i] = lerp(curOp.current[i], opT, 0.12);
+        // slow, smooth easing toward target (gentle like the reference)
+        curDeg.current[i] = lerp(curDeg.current[i], degT, 0.06);
+        curOp.current[i] = lerp(curOp.current[i], opT, 0.1);
 
         const introT = easeOut(
           clamp01((elapsed - INTRO_DELAY - i * INTRO_STAGGER) / INTRO_MS)
@@ -93,17 +89,6 @@ export function HomeStage() {
     return () => cancelAnimationFrame(rafRef.current);
   }, []);
 
-  // hover: flatten + switch the title to a hollow outline (vanholtz brutalist)
-  const setOutline = (a: HTMLAnchorElement, on: boolean) => {
-    if (on) {
-      a.style.webkitTextFillColor = "transparent";
-      a.style.webkitTextStroke = "2px var(--color-foreground)";
-    } else {
-      a.style.webkitTextFillColor = "";
-      a.style.webkitTextStroke = "";
-    }
-  };
-
   return (
     <div
       ref={viewportRef}
@@ -117,126 +102,132 @@ export function HomeStage() {
         style={{
           listStyle: "none",
           margin: 0,
-          padding: "26vh 6vw 30vh 0",
+          padding: "24vh 6vw 28vh 0",
           textAlign: "right",
           transformStyle: "preserve-3d",
           pointerEvents: "none",
         }}
       >
-        {projects.map((project, i) => (
-          <li
-            key={project.slug}
-            style={{
-              transformStyle: "preserve-3d",
-              lineHeight: "0.86",
-              marginBottom: i < projects.length - 1 ? "4vh" : 0,
-              pointerEvents: "none",
-            }}
-          >
-            <div
-              ref={(el) => {
-                itemRefs.current[i] = el;
-              }}
+        {projects.map((project, i) => {
+          const lines = project.titleLines ?? [project.title];
+          // reversed hover: hovered line is hollow outline, the rest stay solid black
+          const isOutline = hoverIdx === i;
+          return (
+            <li
+              key={project.slug}
               style={{
-                transform: `rotateY(${REST_DEG}deg)`,
-                transformOrigin: "right center",
                 transformStyle: "preserve-3d",
-                willChange: "transform, opacity",
-                opacity: 0,
+                lineHeight: "0.82",
+                marginBottom: i < projects.length - 1 ? "3.5vh" : 0,
+                pointerEvents: "none",
               }}
             >
-              <a
-                href={`/work/${project.slug}`}
-                style={{
-                  position: "relative",
-                  display: "inline-block",
-                  fontFamily: "var(--font-display), sans-serif",
-                  color: "var(--color-foreground)",
-                  textDecoration: "none",
-                  textTransform: "uppercase",
-                  fontSize: "clamp(2.75rem, 9vw, 8.5rem)",
-                  letterSpacing: "0.01em",
-                  lineHeight: 0.9,
-                  whiteSpace: "nowrap",
-                  pointerEvents: "auto",
-                  transition:
-                    "-webkit-text-fill-color 0.35s ease, -webkit-text-stroke-color 0.35s ease",
-                }}
+              <div
                 ref={(el) => {
-                  aRefs.current[i] = el;
+                  itemRefs.current[i] = el;
                 }}
-                onMouseEnter={() => {
-                  hovered.current = i;
-                  // hovered stays solid; the rest switch to hollow outline
-                  aRefs.current.forEach((a, j) => {
-                    if (a) setOutline(a, j !== i);
-                  });
-                }}
-                onMouseLeave={() => {
-                  hovered.current = null;
-                  aRefs.current.forEach((a) => {
-                    if (a) setOutline(a, false);
-                  });
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigateTo(`/work/${project.slug}`);
+                style={{
+                  transform: `rotateY(${REST_DEG}deg)`,
+                  transformOrigin: "right center",
+                  transformStyle: "preserve-3d",
+                  willChange: "transform, opacity",
+                  opacity: 0,
                 }}
               >
-                {/* numbering (01, 02 …) — keep its own fill so outline doesn't hide it */}
-                <span
-                  aria-hidden
+                <a
+                  href={`/work/${project.slug}`}
                   style={{
-                    position: "absolute",
-                    top: "0.18em",
-                    left: "-2.1em",
-                    fontSize: "0.17em",
-                    fontWeight: 700,
-                    letterSpacing: "0.04em",
-                    lineHeight: 1,
-                    opacity: 0.55,
-                    fontFamily: "var(--font-mono), monospace",
-                    WebkitTextFillColor: "var(--color-foreground)",
+                    position: "relative",
+                    display: "inline-block",
+                    fontFamily: "var(--font-display), sans-serif",
+                    textTransform: "uppercase",
+                    fontSize: "clamp(2.75rem, 9vw, 8.5rem)",
+                    letterSpacing: "-0.035em",
+                    lineHeight: 0.82,
+                    whiteSpace: "nowrap",
+                    pointerEvents: "auto",
+                    color: "var(--color-foreground)",
+                    WebkitTextStroke: "2px var(--color-foreground)",
+                    WebkitTextFillColor: isOutline
+                      ? "transparent"
+                      : "var(--color-foreground)",
+                    transition: "-webkit-text-fill-color 0.4s ease",
+                  }}
+                  onMouseEnter={() => {
+                    hovered.current = i;
+                    setHoverIdx(i);
+                  }}
+                  onMouseLeave={() => {
+                    hovered.current = null;
+                    setHoverIdx(null);
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateTo(`/work/${project.slug}`);
                   }}
                 >
-                  {project.number}
-                </span>
-                {/* decorative slash tick */}
-                <span
-                  aria-hidden
-                  style={{
-                    position: "absolute",
-                    top: "0.23em",
-                    left: "-0.32em",
-                    width: "2px",
-                    height: "0.82em",
-                    backgroundColor: "var(--color-foreground)",
-                    transform: "rotate(25deg)",
-                  }}
-                />
-                {/* year label */}
-                <span
-                  aria-hidden
-                  style={{
-                    position: "absolute",
-                    bottom: "-0.2em",
-                    right: "0.05em",
-                    fontSize: "0.13em",
-                    fontWeight: 500,
-                    letterSpacing: "0.05em",
-                    lineHeight: 1,
-                    opacity: 0.5,
-                    fontFamily: "var(--font-mono), monospace",
-                    WebkitTextFillColor: "var(--color-foreground)",
-                  }}
-                >
-                  {yearOf(project.period)}
-                </span>
-                {project.title}
-              </a>
-            </div>
-          </li>
-        ))}
+                  {/* numbering (01, 02 …) */}
+                  <span
+                    aria-hidden
+                    style={{
+                      position: "absolute",
+                      top: "0.18em",
+                      left: "-1.9em",
+                      fontSize: "0.16em",
+                      fontWeight: 700,
+                      letterSpacing: "0.04em",
+                      lineHeight: 1,
+                      opacity: 0.55,
+                      fontFamily: "var(--font-mono), monospace",
+                      WebkitTextFillColor: "var(--color-foreground)",
+                      WebkitTextStrokeWidth: "0",
+                    }}
+                  >
+                    {project.number}
+                  </span>
+                  {/* decorative slash tick */}
+                  <span
+                    aria-hidden
+                    style={{
+                      position: "absolute",
+                      top: "0.2em",
+                      left: "-0.28em",
+                      width: "2px",
+                      height: "0.8em",
+                      backgroundColor: "var(--color-foreground)",
+                      transform: "rotate(25deg)",
+                    }}
+                  />
+                  {/* year label */}
+                  <span
+                    aria-hidden
+                    style={{
+                      position: "absolute",
+                      bottom: "-0.15em",
+                      right: "0.05em",
+                      fontSize: "0.12em",
+                      fontWeight: 500,
+                      letterSpacing: "0.05em",
+                      lineHeight: 1,
+                      opacity: 0.5,
+                      fontFamily: "var(--font-mono), monospace",
+                      WebkitTextFillColor: "var(--color-foreground)",
+                      WebkitTextStrokeWidth: "0",
+                    }}
+                  >
+                    {yearOf(project.period)}
+                  </span>
+                  {/* title — split into lines */}
+                  {lines.map((line, li) => (
+                    <span key={li} style={{ display: "block" }}>
+                      {line}
+                    </span>
+                  ))}
+                </a>
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
