@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist_Mono } from "next/font/google";
+import { Geist_Mono, Archivo_Black } from "next/font/google";
 import "./globals.css";
 import "lenis/dist/lenis.css";
 import { SmoothScroll } from "@/components/smooth-scroll";
@@ -8,6 +8,13 @@ import { SiteShell } from "@/components/site-shell";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+// Druk Wide (paid) substitute — heavy display face for the giant titles/logo
+const archivoBlack = Archivo_Black({
+  variable: "--font-display",
+  weight: "400",
   subsets: ["latin"],
 });
 
@@ -23,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ko" className={geistMono.variable}>
+    <html lang="ko" className={`${geistMono.variable} ${archivoBlack.variable}`}>
       {/* night-mode as initial class prevents flash before client JS hydrates */}
       <body className="ultra-mode">
         <ColorModeProvider>

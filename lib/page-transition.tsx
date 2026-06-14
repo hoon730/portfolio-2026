@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, useRef } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+} from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
@@ -18,10 +25,27 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function PageTransitionProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [opacity, setOpacity] = useState(0);
-  const [visible, setVisible] = useState(false);
-  const [duration, setDuration] = useState(0.45);
+  // intro curtain covers the screen on first paint, then lifts
+  const [opacity, setOpacity] = useState(1);
+  const [visible, setVisible] = useState(true);
+  const [duration, setDuration] = useState(0.7);
   const busy = useRef(false);
+
+  // ── intro reveal on mount ──
+  useEffect(() => {
+    let t1: ReturnType<typeof setTimeout>;
+    let t2: ReturnType<typeof setTimeout>;
+    // hold the curtain briefly, then fade it out
+    t1 = setTimeout(() => {
+      setDuration(0.7);
+      setOpacity(0);
+    }, 120);
+    t2 = setTimeout(() => setVisible(false), 950);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, []);
 
   const navigateTo = useCallback(
     async (href: string) => {

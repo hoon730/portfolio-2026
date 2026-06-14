@@ -7,9 +7,18 @@ interface Props {
   children: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
-export function TransitionLink({ href, children, className, style }: Props) {
+export function TransitionLink({
+  href,
+  children,
+  className,
+  style,
+  onMouseEnter,
+  onMouseLeave,
+}: Props) {
   const { navigateTo } = usePageTransition();
 
   return (
@@ -17,6 +26,8 @@ export function TransitionLink({ href, children, className, style }: Props) {
       href={href}
       className={className}
       style={style}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       onClick={(e) => {
         e.preventDefault();
         navigateTo(href);

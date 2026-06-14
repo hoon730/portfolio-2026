@@ -35,9 +35,9 @@ export default async function WorkPage({ params }: Props) {
         <Reveal y={60}>
           <h1
             style={{
+              fontFamily: "var(--font-display), sans-serif",
               fontSize: "clamp(2.75rem, 9vw, 7.5rem)",
-              fontWeight: 900,
-              letterSpacing: "-0.01em",
+              letterSpacing: "0.005em",
               lineHeight: 0.92,
               textTransform: "uppercase",
               color: "var(--color-foreground)",
@@ -198,10 +198,10 @@ export default async function WorkPage({ params }: Props) {
             <div
               className="transition-opacity hover:opacity-60"
               style={{
+                fontFamily: "var(--font-display), sans-serif",
                 fontSize: "clamp(2.5rem, 9vw, 8rem)",
-                fontWeight: 900,
                 lineHeight: 0.92,
-                letterSpacing: "-0.01em",
+                letterSpacing: "0.005em",
                 textTransform: "uppercase",
                 color: "var(--color-foreground)",
               }}

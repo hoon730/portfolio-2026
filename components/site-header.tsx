@@ -49,17 +49,24 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
       className="fixed bottom-0 left-0 right-0 z-40 flex items-end"
       style={{ pointerEvents: "none" }}
     >
-      {/* Logo — floats above the bottom bar */}
+      {/* Logo — stacked 3 lines, floats above the bottom bar */}
       <Link
         href="/"
-        className="absolute left-[3.75rem] font-black text-[0.875rem] uppercase tracking-[0.12em] leading-none"
+        aria-label="YEOM DONG HOON — home"
+        className="absolute left-[3.75rem] uppercase"
         style={{
-          bottom: "calc(100% + 1.75rem)",
+          bottom: "calc(100% + 1.5rem)",
           color: "var(--color-foreground)",
           pointerEvents: "auto",
+          fontFamily: "var(--font-display), sans-serif",
+          fontSize: "clamp(1rem, 1.5vw, 1.4rem)",
+          lineHeight: 0.98,
+          letterSpacing: "0.02em",
         }}
       >
-        <SlideUp delay={0.05}>염동훈</SlideUp>
+        <SlideUp delay={0.5}>YEOM</SlideUp>
+        <SlideUp delay={0.58}>DONG</SlideUp>
+        <SlideUp delay={0.66}>HOON</SlideUp>
       </Link>
 
       {/* Bottom bar */}
@@ -69,12 +76,12 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
       >
         {/* Left: meta info */}
         <div className="flex gap-8 text-[0.75rem] uppercase tracking-[0.1em]">
-          <SlideUp delay={0.15}>
+          <SlideUp delay={0.5}>
             <span style={{ color: "var(--color-muted)" }}>
               프론트엔드 개발자 · 서울
             </span>
           </SlideUp>
-          <SlideUp delay={0.22}>
+          <SlideUp delay={0.56}>
             <a
               href="mailto:ehdgns730@gmail.com"
               className="transition-opacity hover:opacity-100"
@@ -88,7 +95,7 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
         {/* Right: about + color modes */}
         <div className="flex items-center gap-6 text-[0.75rem] uppercase tracking-[0.1em]">
           {/* About / Back */}
-          <SlideUp delay={0.28}>
+          <SlideUp delay={0.62}>
             {isHome ? (
               <button
                 onClick={onAboutToggle}
@@ -112,7 +119,7 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
           {/* Color mode toggles */}
           <div className="flex items-center gap-1.5">
             {MODES.map(({ value, label, bg, fg }, i) => (
-              <SlideUp key={value} delay={0.34 + i * 0.06}>
+              <SlideUp key={value} delay={0.68 + i * 0.06}>
                 <button
                   onClick={() => setMode(value)}
                   title={value.replace("-mode", "")}
