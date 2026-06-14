@@ -9,30 +9,45 @@ function yearOf(period: string): string {
   return m ? m[0] : "2025";
 }
 
-const REST_DEG = -45; // lying back (vanholtz baseline)
+const N = projects.length;
+const REST_DEG = -45; // lying back
 const FLAT_DEG = -30; // gentle scroll flatten near center
-const HOVER_DEG = -38; // subtle stand-up on hover (close to rest)
+const HOVER_DEG = -18; // hover pushes the line toward the viewer (not fully flat)
+const FOLD_DEG = -100; // exit: folds past flat, away from viewer
+
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+const easeIn = (t: number) => t * t;
 const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
-const INTRO_MS = 750;
-const INTRO_STAGGER = 95;
-const INTRO_DELAY = 350;
+// entry: list pours down, filling bottom→top, while unfolding
+const INTRO_DELAY = 120;
+const INTRO_STAGGER = 120;
+const INTRO_MS = 780;
+// exit: list folds back, disappearing bottom→top
+const LEAVE_STAGGER = 100;
+const LEAVE_ITEM_MS = 430;
 
 export function HomeStage() {
-  const { navigateTo } = usePageTransition();
+  const { navigateTo, leaving } = usePageTransition();
   const viewportRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const rafRef = useRef<number>(0);
   const hovered = useRef<number | null>(null);
   const startTime = useRef<number>(0);
+  const leaveStart = useRef<number>(0);
+  const leavingRef = useRef(false);
   const curDeg = useRef<number[]>(projects.map(() => REST_DEG));
   const curOp = useRef<number[]>(projects.map(() => 0));
   const originY = useRef(50);
-  // hoverIdx drives the text style (outline vs solid) — infrequent, re-render is cheap
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
+  // mirror `leaving` into a ref the rAF can read, and stamp the start time
+  useEffect(() => {
+    if (leaving && !leavingRef.current) leaveStart.current = performance.now();
+    leavingRef.current = leaving;
+  }, [leaving]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -47,18 +62,30 @@ export function HomeStage() {
       const doc = document.documentElement;
       const maxScroll = doc.scrollHeight - vh;
       const frac = maxScroll > 0 ? doc.scrollTop / maxScroll : 0;
-      const targetOY = 32 + frac * 36;
-      originY.current = lerp(originY.current, targetOY, 0.08);
+      originY.current = lerp(originY.current, 32 + frac * 36, 0.08);
       viewport.style.perspectiveOrigin = `50% ${originY.current.toFixed(2)}%`;
 
       const threshold = vh * 0.42;
 
       itemRefs.current.forEach((el, i) => {
         if (!el) return;
+
+        // ── EXIT: fold back, bottom item first ──
+        if (leavingRef.current) {
+          const le = now - leaveStart.current;
+          const delay = (N - 1 - i) * LEAVE_STAGGER;
+          const p = easeIn(clamp01((le - delay) / LEAVE_ITEM_MS));
+          const deg = lerp(curDeg.current[i], FOLD_DEG, p);
+          el.style.transform = `translateY(${(p * -45).toFixed(1)}px) rotateY(${deg.toFixed(2)}deg)`;
+          el.style.opacity = (1 - p).toFixed(3);
+          return;
+        }
+
+        // ── target angle / opacity (hover or scroll-focus) ──
         let degT: number;
         let opT: number;
         if (hovered.current === i) {
-          degT = HOVER_DEG; // only the hovered line moves, subtly
+          degT = HOVER_DEG;
           opT = 1;
         } else {
           const r = el.getBoundingClientRect();
@@ -68,18 +95,17 @@ export function HomeStage() {
           degT = lerp(REST_DEG, FLAT_DEG, focus);
           opT = lerp(0.62, 1, focus);
         }
-
-        // slow, smooth easing toward target (gentle like the reference)
-        curDeg.current[i] = lerp(curDeg.current[i], degT, 0.06);
+        curDeg.current[i] = lerp(curDeg.current[i], degT, 0.07);
         curOp.current[i] = lerp(curOp.current[i], opT, 0.1);
 
-        const introT = easeOut(
-          clamp01((elapsed - INTRO_DELAY - i * INTRO_STAGGER) / INTRO_MS)
-        );
-        const ty = (1 - introT) * 55;
+        // ── ENTRY: pour down (from above) + unfold, filling bottom→top ──
+        const introDelay = INTRO_DELAY + (N - 1 - i) * INTRO_STAGGER;
+        const it = easeOut(clamp01((elapsed - introDelay) / INTRO_MS));
+        const ty = (1 - it) * -64; // falls from above into place
+        const deg = lerp(-92, curDeg.current[i], it); // unfolds into the lean
 
-        el.style.transform = `translateY(${ty.toFixed(2)}px) rotateY(${curDeg.current[i].toFixed(2)}deg)`;
-        el.style.opacity = (curOp.current[i] * introT).toFixed(3);
+        el.style.transform = `translateY(${ty.toFixed(2)}px) rotateY(${deg.toFixed(2)}deg)`;
+        el.style.opacity = (curOp.current[i] * it).toFixed(3);
       });
 
       rafRef.current = requestAnimationFrame(tick);
@@ -92,11 +118,7 @@ export function HomeStage() {
   return (
     <div
       ref={viewportRef}
-      style={{
-        perspective: "100vw",
-        perspectiveOrigin: "50% 50%",
-        overflow: "hidden",
-      }}
+      style={{ perspective: "100vw", perspectiveOrigin: "50% 50%", overflow: "hidden" }}
     >
       <ul
         style={{
@@ -110,7 +132,6 @@ export function HomeStage() {
       >
         {projects.map((project, i) => {
           const lines = project.titleLines ?? [project.title];
-          // reversed hover: hovered line is hollow outline, the rest stay solid black
           const isOutline = hoverIdx === i;
           return (
             <li
@@ -118,7 +139,7 @@ export function HomeStage() {
               style={{
                 transformStyle: "preserve-3d",
                 lineHeight: "0.82",
-                marginBottom: i < projects.length - 1 ? "3.5vh" : 0,
+                marginBottom: i < N - 1 ? "3.5vh" : 0,
                 pointerEvents: "none",
               }}
             >
@@ -148,9 +169,7 @@ export function HomeStage() {
                     pointerEvents: "auto",
                     color: "var(--color-foreground)",
                     WebkitTextStroke: "2px var(--color-foreground)",
-                    WebkitTextFillColor: isOutline
-                      ? "transparent"
-                      : "var(--color-foreground)",
+                    WebkitTextFillColor: isOutline ? "transparent" : "var(--color-foreground)",
                     transition: "-webkit-text-fill-color 0.4s ease",
                   }}
                   onMouseEnter={() => {
@@ -166,7 +185,6 @@ export function HomeStage() {
                     navigateTo(`/work/${project.slug}`);
                   }}
                 >
-                  {/* numbering (01, 02 …) */}
                   <span
                     aria-hidden
                     style={{
@@ -185,7 +203,6 @@ export function HomeStage() {
                   >
                     {project.number}
                   </span>
-                  {/* decorative slash tick */}
                   <span
                     aria-hidden
                     style={{
@@ -198,7 +215,6 @@ export function HomeStage() {
                       transform: "rotate(25deg)",
                     }}
                   />
-                  {/* year label */}
                   <span
                     aria-hidden
                     style={{
@@ -217,7 +233,6 @@ export function HomeStage() {
                   >
                     {yearOf(project.period)}
                   </span>
-                  {/* title — split into lines */}
                   {lines.map((line, li) => (
                     <span key={li} style={{ display: "block" }}>
                       {line}

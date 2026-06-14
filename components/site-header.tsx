@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useColorMode, ColorMode } from "@/lib/color-mode";
@@ -13,21 +14,34 @@ const MODES: { value: ColorMode; label: string; bg: string; fg: string }[] = [
 ];
 
 const MOVE = "transform 0.85s cubic-bezier(0.16, 1, 0.3, 1)";
+const LOGO_WORDS = ["YEOM", "DONG", "HOON"];
+const LOGO_BASE = 1.15; // logo letters rise after the list has poured in
 
-function SlideUp({
-  children,
-  delay = 0,
-}: {
-  children: React.ReactNode;
-  delay?: number;
-}) {
+// one masked line that slides up
+function SlideUp({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   return (
     <span className="block overflow-hidden">
       <motion.span
         className="block"
         initial={{ y: "110%" }}
         animate={{ y: "0%" }}
-        transition={{ duration: 0.9, ease: EASE_OUT_EXPO, delay }}
+        transition={{ duration: 0.85, ease: EASE_OUT_EXPO, delay }}
+      >
+        {children}
+      </motion.span>
+    </span>
+  );
+}
+
+// one masked letter that slides up
+function LetterSlide({ children, delay }: { children: React.ReactNode; delay: number }) {
+  return (
+    <span className="inline-block overflow-hidden">
+      <motion.span
+        className="inline-block"
+        initial={{ y: "110%" }}
+        animate={{ y: "0%" }}
+        transition={{ duration: 0.7, ease: EASE_OUT_EXPO, delay }}
       >
         {children}
       </motion.span>
@@ -43,22 +57,32 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
   const { mode, setMode } = useColorMode();
   const pathname = usePathname();
   const isHome = pathname === "/";
-  const { navigateTo } = usePageTransition();
+  const { navigateTo, leaving } = usePageTransition();
 
-  // vanholtz: light text on ultra/night, dark text on light-mode
+  // light text on ultra/night, dark on light-mode
   const ui = mode === "light-mode" ? "#0a0a0a" : "#f2f2f2";
+  // sits at top while leaving home or while on a work page
+  const atTop = !isHome || leaving;
+
+  // replay the entrance each time we land on home
+  const [homeKey, setHomeKey] = useState(0);
+  const prevHome = useRef(isHome);
+  useEffect(() => {
+    if (isHome && !prevHome.current) setHomeKey((k) => k + 1);
+    prevHome.current = isHome;
+  }, [isHome]);
 
   return (
     <>
-      {/* ── Identity block: sits bottom-left on home, slides up to top-left on work pages ── */}
+      {/* ── Identity block (moves bottom-left ⇄ top-left) ── */}
       <div
         className="fixed left-[3.75rem] top-0 z-40"
         style={{
           width: "min(640px, 64vw)",
           pointerEvents: "none",
-          transform: isHome
-            ? "translateY(calc(100vh - 100% - 7vh))"
-            : "translateY(7.5vh)",
+          transform: atTop
+            ? "translateY(7.5vh)"
+            : "translateY(calc(100vh - 100% - 7vh))",
           transition: MOVE,
         }}
       >
@@ -71,7 +95,7 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
             pointerEvents: "auto",
             color: ui,
             fontFamily: "var(--font-display), sans-serif",
-            fontSize: isHome ? "clamp(1.9rem, 2.6vw, 2.5rem)" : "1.2rem",
+            fontSize: atTop ? "1.2rem" : "clamp(1.9rem, 2.6vw, 2.5rem)",
             lineHeight: 0.85,
             letterSpacing: "0.01em",
             transition: "font-size 0.85s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -81,61 +105,70 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
             if (!isHome) navigateTo("/");
           }}
         >
-          <SlideUp delay={0.5}>YEOM</SlideUp>
-          <SlideUp delay={0.58}>DONG</SlideUp>
-          <SlideUp delay={0.66}>HOON</SlideUp>
+          {isHome ? (
+            <div key={homeKey}>
+              {LOGO_WORDS.map((word, wi) => (
+                <span key={wi} className="flex">
+                  {word.split("").map((ch, ci) => (
+                    <LetterSlide key={ci} delay={LOGO_BASE + (wi * 4 + ci) * 0.04}>
+                      {ch}
+                    </LetterSlide>
+                  ))}
+                </span>
+              ))}
+            </div>
+          ) : (
+            LOGO_WORDS.map((w) => (
+              <span key={w} className="block">
+                {w}
+              </span>
+            ))
+          )}
         </a>
 
-        {/* Meta + nav row — fades/collapses on work pages */}
+        {/* Meta + nav row — collapses when at top */}
         <motion.div
+          key={homeKey}
           initial={false}
-          animate={{ opacity: isHome ? 1 : 0, height: isHome ? "auto" : 0 }}
+          animate={{ opacity: atTop ? 0 : 1, height: atTop ? 0 : "auto" }}
           transition={{ duration: 0.5, ease: EASE_OUT_EXPO }}
           style={{ overflow: "hidden" }}
         >
           <div
-            className="mt-7 flex items-end justify-between gap-6 text-[0.8rem] leading-[1.5]"
+            className="mt-7 flex items-end justify-between gap-6 text-[0.875rem] leading-[1.15]"
             style={{ color: ui, pointerEvents: "auto" }}
           >
-            {/* role */}
-            <div style={{ opacity: 0.75 }}>
-              <SlideUp delay={0.74}>프론트엔드</SlideUp>
-              <SlideUp delay={0.78}>개발자</SlideUp>
+            {/* role / name */}
+            <div>
+              <SlideUp delay={1.75}>프론트엔드</SlideUp>
+              <SlideUp delay={1.8}>염동훈</SlideUp>
             </div>
 
             {/* location + email */}
-            <div style={{ opacity: 0.75 }}>
-              <SlideUp delay={0.8}>서울</SlideUp>
-              <SlideUp delay={0.84}>
+            <div>
+              <SlideUp delay={1.86}>서울</SlideUp>
+              <SlideUp delay={1.91}>
                 <a href="mailto:ehdgns730@gmail.com">ehdgns730@gmail.com</a>
               </SlideUp>
             </div>
 
-            {/* nav — 01 about / 02 contact, right-aligned */}
+            {/* nav — 01 about / 02 contact */}
             <nav className="ml-auto flex flex-col gap-1 text-right">
-              <SlideUp delay={0.88}>
+              <SlideUp delay={1.97}>
                 <button
                   onClick={onAboutToggle}
-                  className="inline-flex items-center gap-2 transition-opacity hover:opacity-60"
+                  className="inline-flex items-center gap-2 font-medium transition-opacity hover:opacity-60"
                 >
-                  <span
-                    style={{ opacity: 0.5, fontFamily: "var(--font-mono), monospace" }}
-                  >
-                    01
-                  </span>
+                  <span style={{ fontSize: "0.625rem", opacity: 0.85 }}>01</span>
                   <span>about</span>
                 </button>
               </SlideUp>
-              <SlideUp delay={0.92}>
+              <SlideUp delay={2.02}>
                 <a
                   href="mailto:ehdgns730@gmail.com"
-                  className="inline-flex items-center gap-2 transition-opacity hover:opacity-60"
+                  className="inline-flex items-center gap-2 font-medium transition-opacity hover:opacity-60"
                 >
-                  <span
-                    style={{ opacity: 0.5, fontFamily: "var(--font-mono), monospace" }}
-                  >
-                    02
-                  </span>
+                  <span style={{ fontSize: "0.625rem", opacity: 0.85 }}>02</span>
                   <span>contact</span>
                 </a>
               </SlideUp>
@@ -144,13 +177,13 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
         </motion.div>
       </div>
 
-      {/* ── Color modes — fixed bottom-right ── */}
+      {/* ── Color modes — bottom-right ── */}
       <div
         className="fixed bottom-[2.875rem] right-[3.75rem] z-40 flex items-center gap-1.5"
         style={{ pointerEvents: "auto" }}
       >
         {MODES.map(({ value, label, bg, fg }, i) => (
-          <SlideUp key={value} delay={0.68 + i * 0.06}>
+          <SlideUp key={value} delay={0.6 + i * 0.06}>
             <button
               onClick={() => setMode(value)}
               title={value.replace("-mode", "")}
@@ -168,7 +201,7 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
         ))}
       </div>
 
-      {/* ── Back button — top-right, work pages only ── */}
+      {/* ── Back button — top-right on work pages ── */}
       <button
         aria-label="홈으로 돌아가기"
         onClick={() => navigateTo("/")}
