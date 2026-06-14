@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { usePathname } from "next/navigation";
 import { useColorMode, ColorMode } from "@/lib/color-mode";
 import { EASE_OUT_EXPO } from "@/lib/motion";
 import { usePageTransition } from "@/lib/page-transition";
@@ -15,9 +14,8 @@ const MODES: { value: ColorMode; label: string; bg: string; fg: string }[] = [
 
 const MOVE = "transform 0.85s cubic-bezier(0.16, 1, 0.3, 1)";
 const LOGO_WORDS = ["YEOM", "DONG", "HOON"];
-const LOGO_BASE = 1.15; // logo letters rise after the list has poured in
+const LOGO_BASE = 1.15;
 
-// one masked line that slides up
 function SlideUp({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   return (
     <span className="block overflow-hidden">
@@ -33,7 +31,6 @@ function SlideUp({ children, delay = 0 }: { children: React.ReactNode; delay?: n
   );
 }
 
-// one masked letter that slides up
 function LetterSlide({ children, delay }: { children: React.ReactNode; delay: number }) {
   return (
     <span className="inline-block overflow-hidden">
@@ -55,13 +52,10 @@ interface SiteHeaderProps {
 
 export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
   const { mode, setMode } = useColorMode();
-  const pathname = usePathname();
-  const isHome = pathname === "/";
-  const { navigateTo, leaving } = usePageTransition();
+  const { navigateTo, leaving, currentPath } = usePageTransition();
+  const isHome = currentPath === "/";
 
-  // light text on ultra/night, dark on light-mode
   const ui = mode === "light-mode" ? "#0a0a0a" : "#f2f2f2";
-  // sits at top while leaving home or while on a work page
   const atTop = !isHome || leaving;
 
   // replay the entrance each time we land on home
@@ -78,11 +72,10 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
       <div
         className="fixed left-[3.75rem] top-0 z-40"
         style={{
-          width: "min(640px, 64vw)",
+          width: "min(620px, 60vw)",
           pointerEvents: "none",
-          transform: atTop
-            ? "translateY(7.5vh)"
-            : "translateY(calc(100vh - 100% - 7vh))",
+          // both targets are fixed vh (no self-height calc) so the move stays smooth
+          transform: atTop ? "translateY(7.5vh)" : "translateY(64vh)",
           transition: MOVE,
         }}
       >
@@ -95,9 +88,9 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
             pointerEvents: "auto",
             color: ui,
             fontFamily: "var(--font-display), sans-serif",
-            fontSize: atTop ? "1.2rem" : "clamp(1.9rem, 2.6vw, 2.5rem)",
+            fontSize: atTop ? "1.2rem" : "2.5rem",
             lineHeight: 0.85,
-            letterSpacing: "0.01em",
+            letterSpacing: "0.005em",
             transition: "font-size 0.85s cubic-bezier(0.16, 1, 0.3, 1)",
           }}
           onClick={(e) => {
@@ -126,55 +119,56 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
           )}
         </a>
 
-        {/* Meta + nav row — collapses when at top */}
+        {/* Role + contact — collapses when at top (work pages) */}
         <motion.div
-          key={homeKey}
+          key={`meta-${homeKey}`}
           initial={false}
           animate={{ opacity: atTop ? 0 : 1, height: atTop ? 0 : "auto" }}
           transition={{ duration: 0.5, ease: EASE_OUT_EXPO }}
           style={{ overflow: "hidden" }}
         >
           <div
-            className="mt-7 flex items-end justify-between gap-6 text-[0.875rem] leading-[1.15]"
+            className="mt-6 flex gap-10 text-[0.875rem] leading-[1.2]"
             style={{ color: ui, pointerEvents: "auto" }}
           >
-            {/* role / name */}
             <div>
               <SlideUp delay={1.75}>프론트엔드</SlideUp>
               <SlideUp delay={1.8}>염동훈</SlideUp>
             </div>
-
-            {/* location + email */}
             <div>
               <SlideUp delay={1.86}>서울</SlideUp>
               <SlideUp delay={1.91}>
                 <a href="mailto:ehdgns730@gmail.com">ehdgns730@gmail.com</a>
               </SlideUp>
             </div>
-
-            {/* nav — 01 about / 02 contact */}
-            <nav className="ml-auto flex flex-col gap-1 text-right">
-              <SlideUp delay={1.97}>
-                <button
-                  onClick={onAboutToggle}
-                  className="inline-flex items-center gap-2 font-medium transition-opacity hover:opacity-60"
-                >
-                  <span style={{ fontSize: "0.625rem", opacity: 0.85 }}>01</span>
-                  <span>about</span>
-                </button>
-              </SlideUp>
-              <SlideUp delay={2.02}>
-                <a
-                  href="mailto:ehdgns730@gmail.com"
-                  className="inline-flex items-center gap-2 font-medium transition-opacity hover:opacity-60"
-                >
-                  <span style={{ fontSize: "0.625rem", opacity: 0.85 }}>02</span>
-                  <span>contact</span>
-                </a>
-              </SlideUp>
-            </nav>
           </div>
         </motion.div>
+
+        {/* Nav — 01 about / 02 contact. Left-aligned; stays visible and rides to the top */}
+        <nav
+          key={`nav-${homeKey}`}
+          className="mt-5 flex flex-col gap-1 text-[0.875rem] leading-[1.2]"
+          style={{ color: ui, pointerEvents: "auto" }}
+        >
+          <SlideUp delay={1.97}>
+            <button
+              onClick={onAboutToggle}
+              className="inline-flex items-center gap-2 font-medium transition-opacity hover:opacity-60"
+            >
+              <span style={{ fontSize: "0.625rem", opacity: 0.85 }}>01</span>
+              <span>about</span>
+            </button>
+          </SlideUp>
+          <SlideUp delay={2.02}>
+            <a
+              href="mailto:ehdgns730@gmail.com"
+              className="inline-flex items-center gap-2 font-medium transition-opacity hover:opacity-60"
+            >
+              <span style={{ fontSize: "0.625rem", opacity: 0.85 }}>02</span>
+              <span>contact</span>
+            </a>
+          </SlideUp>
+        </nav>
       </div>
 
       {/* ── Color modes — bottom-right ── */}

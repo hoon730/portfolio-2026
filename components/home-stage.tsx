@@ -37,24 +37,28 @@ export function HomeStage() {
   const hovered = useRef<number | null>(null);
   const startTime = useRef<number>(0);
   const leaveStart = useRef<number>(0);
-  const leavingRef = useRef(false);
+  const exiting = useRef(false); // latched: once leaving starts it never reverts
   const curDeg = useRef<number[]>(projects.map(() => REST_DEG));
   const curOp = useRef<number[]>(projects.map(() => 0));
   const originY = useRef(50);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
-  // mirror `leaving` into a ref the rAF can read, and stamp the start time
+  // latch the exit so the list never snaps back to visible before the route swaps
   useEffect(() => {
-    if (leaving && !leavingRef.current) leaveStart.current = performance.now();
-    leavingRef.current = leaving;
+    if (leaving && !exiting.current) {
+      exiting.current = true;
+      leaveStart.current = performance.now();
+    }
   }, [leaving]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
     startTime.current = performance.now();
+    let cancelled = false;
 
     const tick = (now: number) => {
+      if (cancelled) return; // stop rescheduling once unmounted (no orphan rAF loops)
       const vh = window.innerHeight;
       const center = vh / 2;
       const elapsed = now - startTime.current;
@@ -70,8 +74,8 @@ export function HomeStage() {
       itemRefs.current.forEach((el, i) => {
         if (!el) return;
 
-        // ── EXIT: fold back, bottom item first ──
-        if (leavingRef.current) {
+        // ── EXIT: fold back, bottom item first (latched) ──
+        if (exiting.current) {
           const le = now - leaveStart.current;
           const delay = (N - 1 - i) * LEAVE_STAGGER;
           const p = easeIn(clamp01((le - delay) / LEAVE_ITEM_MS));
@@ -112,7 +116,10 @@ export function HomeStage() {
     };
 
     rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(rafRef.current);
+    };
   }, []);
 
   return (
