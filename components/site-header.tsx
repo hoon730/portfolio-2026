@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useColorMode, ColorMode } from "@/lib/color-mode";
 import { EASE_OUT_EXPO } from "@/lib/motion";
+import { usePageTransition } from "@/lib/page-transition";
 
 const MODES: { value: ColorMode; label: string; bg: string; fg: string }[] = [
   { value: "night-mode", label: "N", bg: "#0a0a0a", fg: "#f2f2f2" },
@@ -41,6 +42,7 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
   const { mode, setMode } = useColorMode();
   const pathname = usePathname();
   const isHome = pathname === "/";
+  const { navigateTo } = usePageTransition();
 
   return (
     <header
@@ -96,13 +98,14 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
                 about
               </button>
             ) : (
-              <Link
+              <a
                 href="/"
-                className="transition-opacity hover:opacity-100"
+                className="transition-opacity hover:opacity-100 cursor-pointer"
                 style={{ color: "var(--color-muted)" }}
+                onClick={(e) => { e.preventDefault(); navigateTo("/"); }}
               >
                 ← home
-              </Link>
+              </a>
             )}
           </SlideUp>
 

@@ -1,8 +1,16 @@
+export interface CaseStudyImage {
+  src: string;
+  alt?: string;
+  caption?: string;
+  wide?: boolean; // true = full-width, false = half-width pair
+}
+
 export interface CaseStudySection {
   label: string;
   heading: string;
   body: string[];
   list?: string[];
+  images?: CaseStudyImage[]; // shown below the section text
 }
 
 export interface CaseStudy {
@@ -14,6 +22,7 @@ export interface CaseStudy {
   stack: string[];
   liveUrl?: string;
   githubUrl?: string;
+  coverImage?: string; // hero image below the title
   sections: CaseStudySection[];
   takeaway: string;
   next: string;
