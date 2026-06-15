@@ -10,7 +10,7 @@ interface ColorModeCtx {
 }
 
 const ColorModeContext = createContext<ColorModeCtx>({
-  mode: "night-mode",
+  mode: "ultra-mode",
   setMode: () => {},
 });
 

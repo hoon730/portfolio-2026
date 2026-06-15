@@ -31,7 +31,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko" className={`${geistMono.variable} ${archivoBlack.variable}`}>
-      {/* night-mode as initial class prevents flash before client JS hydrates */}
+      {/* ultra-mode as initial class prevents flash before client JS hydrates */}
       <body className="ultra-mode">
         <ColorModeProvider>
           <SmoothScroll>
