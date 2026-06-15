@@ -216,8 +216,11 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
             if (!isHome) navigateTo("/");
           }}
         >
+          {/* letters are decorative (split for animation); aria-hidden so the
+              link's aria-label is the sole accessible name — avoids the WCAG
+              "label in name" mismatch axe flags on the concatenated glyphs */}
           {isHome ? (
-            <div key={homeKey}>
+            <div key={homeKey} aria-hidden="true">
               {words.map((word, wi) => (
                 <span key={wi} className="flex">
                   {word.split("").map((ch, ci) => (
@@ -229,11 +232,13 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
               ))}
             </div>
           ) : (
-            words.map((w) => (
-              <span key={w} className="block">
-                {w}
-              </span>
-            ))
+            <span aria-hidden="true">
+              {words.map((w) => (
+                <span key={w} className="block">
+                  {w}
+                </span>
+              ))}
+            </span>
           )}
         </a>
 

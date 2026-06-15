@@ -248,7 +248,6 @@ export function HomeStage() {
                               fontWeight: 700,
                               letterSpacing: "0.02em",
                               lineHeight: 1,
-                              opacity: 0.7,
                               WebkitTextFillColor: "var(--color-foreground)",
                             }}
                           >
