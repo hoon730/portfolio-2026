@@ -3,11 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { projects } from "@/content/projects";
 import { usePageTransition } from "@/lib/page-transition";
+import { useIsMobile } from "@/lib/use-is-mobile";
 
-function yearOf(period: string): string {
-  const m = period.match(/20\d{2}/);
-  return m ? m[0] : "2025";
-}
 
 const N = projects.length;
 const REST_DEG = -45; // lying back
@@ -21,16 +18,19 @@ const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 const easeIn = (t: number) => t * t;
 const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
-// entry: list pours down, filling bottom→top, while unfolding
+// entry: list pours down from the top, filling top→bottom, while unfolding
 const INTRO_DELAY = 120;
 const INTRO_STAGGER = 120;
 const INTRO_MS = 780;
 // exit: list folds back, disappearing bottom→top
 const LEAVE_STAGGER = 100;
 const LEAVE_ITEM_MS = 430;
+// click: clicked item flattens to face the viewer before navigation starts
+const CLICK_FLATTEN_MS = 900;
 
 export function HomeStage() {
   const { navigateTo, leaving } = usePageTransition();
+  const isMobile = useIsMobile();
   const viewportRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const rafRef = useRef<number>(0);
@@ -38,14 +38,24 @@ export function HomeStage() {
   const startTime = useRef<number>(0);
   const leaveStart = useRef<number>(0);
   const exiting = useRef(false); // latched: once leaving starts it never reverts
+  const armed = useRef(false); // only arm the exit after we've seen leaving=false
   const curDeg = useRef<number[]>(projects.map(() => REST_DEG));
   const curOp = useRef<number[]>(projects.map(() => 0));
   const originY = useRef(50);
+  const clicking = useRef<number | null>(null); // index of item being flattened on click
+  const clickStart = useRef<number>(0);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
-  // latch the exit so the list never snaps back to visible before the route swaps
+  // Latch the exit so the list never snaps back before the route swaps.
+  // Guard: when arriving home (work→home) `leaving` can still be true at mount —
+  // arming only after we've observed leaving=false prevents a fresh list from
+  // latching into exit mode and blinking out before it pours in.
   useEffect(() => {
-    if (leaving && !exiting.current) {
+    if (!leaving) {
+      armed.current = true;
+      return;
+    }
+    if (armed.current && !exiting.current) {
       exiting.current = true;
       leaveStart.current = performance.now();
     }
@@ -85,6 +95,17 @@ export function HomeStage() {
           return;
         }
 
+        // ── CLICK FLATTEN: clicked item unfolds to face the viewer before nav ──
+        if (clicking.current === i) {
+          const ce = now - clickStart.current;
+          const p = easeOut(clamp01(ce / CLICK_FLATTEN_MS));
+          const deg = lerp(curDeg.current[i], 0, p);
+          curDeg.current[i] = deg; // keep updated so exit starts from here
+          el.style.transform = `translateY(0px) rotateY(${deg.toFixed(2)}deg)`;
+          el.style.opacity = "1";
+          return;
+        }
+
         // ── target angle / opacity (hover or scroll-focus) ──
         let degT: number;
         let opT: number;
@@ -102,10 +123,10 @@ export function HomeStage() {
         curDeg.current[i] = lerp(curDeg.current[i], degT, 0.07);
         curOp.current[i] = lerp(curOp.current[i], opT, 0.1);
 
-        // ── ENTRY: pour down (from above) + unfold, filling bottom→top ──
-        const introDelay = INTRO_DELAY + (N - 1 - i) * INTRO_STAGGER;
+        // ── ENTRY: pour down (from above) + unfold, filling top→bottom ──
+        const introDelay = INTRO_DELAY + i * INTRO_STAGGER;
         const it = easeOut(clamp01((elapsed - introDelay) / INTRO_MS));
-        const ty = (1 - it) * -64; // falls from above into place
+        const ty = (1 - it) * -vh * 0.35; // starts ~35vh above, clips at container edge
         const deg = lerp(-92, curDeg.current[i], it); // unfolds into the lean
 
         el.style.transform = `translateY(${ty.toFixed(2)}px) rotateY(${deg.toFixed(2)}deg)`;
@@ -131,7 +152,7 @@ export function HomeStage() {
         style={{
           listStyle: "none",
           margin: 0,
-          padding: "24vh 6vw 28vh 0",
+          padding: isMobile ? "24vh 6vw 46vh 0" : "24vh 6vw 28vh 0",
           textAlign: "right",
           transformStyle: "preserve-3d",
           pointerEvents: "none",
@@ -170,7 +191,7 @@ export function HomeStage() {
                     fontFamily: "var(--font-display), sans-serif",
                     textTransform: "uppercase",
                     fontSize: "clamp(2.75rem, 9vw, 8.5rem)",
-                    letterSpacing: "-0.035em",
+                    letterSpacing: "-0.05em",
                     lineHeight: 0.82,
                     whiteSpace: "nowrap",
                     pointerEvents: "auto",
@@ -189,59 +210,65 @@ export function HomeStage() {
                   }}
                   onClick={(e) => {
                     e.preventDefault();
-                    navigateTo(`/work/${project.slug}`);
+                    // Guard: ignore if already clicking or exit in progress
+                    if (clicking.current !== null || exiting.current) return;
+                    clicking.current = i;
+                    clickStart.current = performance.now();
+                    // Navigate after flatten animation completes
+                    setTimeout(() => {
+                      navigateTo(`/work/${project.slug}`);
+                    }, CLICK_FLATTEN_MS);
                   }}
                 >
-                  <span
-                    aria-hidden
-                    style={{
-                      position: "absolute",
-                      top: "0.18em",
-                      left: "-1.9em",
-                      fontSize: "0.16em",
-                      fontWeight: 700,
-                      letterSpacing: "0.04em",
-                      lineHeight: 1,
-                      opacity: 0.55,
-                      fontFamily: "var(--font-mono), monospace",
-                      WebkitTextFillColor: "var(--color-foreground)",
-                      WebkitTextStrokeWidth: "0",
-                    }}
-                  >
-                    {project.number}
-                  </span>
-                  <span
-                    aria-hidden
-                    style={{
-                      position: "absolute",
-                      top: "0.2em",
-                      left: "-0.28em",
-                      width: "2px",
-                      height: "0.8em",
-                      backgroundColor: "var(--color-foreground)",
-                      transform: "rotate(25deg)",
-                    }}
-                  />
-                  <span
-                    aria-hidden
-                    style={{
-                      position: "absolute",
-                      bottom: "-0.15em",
-                      right: "0.05em",
-                      fontSize: "0.12em",
-                      fontWeight: 500,
-                      letterSpacing: "0.05em",
-                      lineHeight: 1,
-                      opacity: 0.5,
-                      fontFamily: "var(--font-mono), monospace",
-                      WebkitTextFillColor: "var(--color-foreground)",
-                      WebkitTextStrokeWidth: "0",
-                    }}
-                  >
-                    {yearOf(project.period)}
-                  </span>
-                  {lines.map((line, li) => (
+{lines.map((line, li) => (
                     <span key={li} style={{ display: "block" }}>
+                      {/* first line gets the marker: a tall thin diagonal slash with a
+                          tiny number tucked at its upper-left (vanholtz style). Inline so
+                          it shares the title's Z plane and reads right at any 3D angle. */}
+                      {li === 0 && (
+                        <span
+                          aria-hidden
+                          style={{
+                            position: "relative",
+                            display: "inline-block",
+                            width: "0.5em",
+                            height: "0.72em",
+                            marginRight: (project.slug === "aurum" || project.slug === "aurora") ? "0.11em" : "0.22em",
+                            verticalAlign: "baseline",
+                            WebkitTextStrokeWidth: "0",
+                          }}
+                        >
+                          <span
+                            style={{
+                              position: "absolute",
+                              top: "0.02em",
+                              left: 0,
+                              fontSize: "0.12em",
+                              fontFamily: "var(--font-geist-mono), monospace",
+                              fontWeight: 700,
+                              letterSpacing: "0.02em",
+                              lineHeight: 1,
+                              opacity: 0.7,
+                              WebkitTextFillColor: "var(--color-foreground)",
+                            }}
+                          >
+                            {project.number}
+                          </span>
+                          <span
+                            style={{
+                              position: "absolute",
+                              right: "0.04em",
+                              bottom: 0,
+                              width: "0.04em",
+                              height: "0.72em",
+                              backgroundColor: "var(--color-foreground)",
+                              transform: "rotate(20deg)",
+                              transformOrigin: "bottom center",
+                              borderRadius: "0.02em",
+                            }}
+                          />
+                        </span>
+                      )}
                       {line}
                     </span>
                   ))}

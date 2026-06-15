@@ -29,7 +29,7 @@ export default async function WorkPage({ params }: Props) {
   const nextStudy = getCaseStudy(study.next);
 
   return (
-    <main style={{ paddingTop: "24vh", paddingBottom: "16vh" }}>
+    <main className="pt-[24vh] max-md:pt-[13vh]" style={{ paddingBottom: "16vh" }}>
       {/* ── Cover ── */}
       <section style={{ ...COL, maxWidth: "1100px" }}>
         <Reveal y={60}>

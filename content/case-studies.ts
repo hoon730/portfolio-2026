@@ -31,7 +31,7 @@ export interface CaseStudy {
 export const caseStudies: CaseStudy[] = [
   {
     slug: "futsalmanager",
-    title: "FutsalManager",
+    title: "Futsal Manager",
     subtitle: "공정한 팀, 운영의 자동화",
     role: "단독 개발 (기획·디자인·프론트·DB)",
     period: "v2.0 · 27명 동호회 중 16명 사용 · 운영 중",
@@ -118,6 +118,83 @@ export const caseStudies: CaseStudy[] = [
     ],
     takeaway:
       "학원에서 '동작하는 코드'를 짤 줄 알았다면, 인턴 2개월 동안 '의도 있는 코드'와 '남이 읽을 수 있는 코드'로 기준이 옮겨갔다.",
+    next: "aurora",
+  },
+  {
+    slug: "aurora",
+    title: "Aurora Plus",
+    subtitle: "OTT 콘텐츠 탐색 플랫폼",
+    role: "단독 개발",
+    period: "2024.11 – 12",
+    stack: ["TypeScript", "Recoil", "React-Query", "Styled-Components"],
+    liveUrl: "https://auroraplus-3fc8e.web.app",
+    sections: [
+      {
+        label: "01 / Overview",
+        heading: "TMDB API 기반 OTT 탐색 서비스",
+        body: [
+          "TMDB API를 활용하여 영화 및 TV 콘텐츠 정보를 가져오고, 사용자 친화적으로 정리해 보여주는 OTT 플랫폼 프로젝트입니다.",
+          "TanStack Query를 사용해 API 데이터를 캐싱·갱신하면서도 비동기 상태 관리를 깔끔하게 처리했고, 장르별 필터링, 메인 콘텐츠 구성에 중점을 두고 작업했습니다.",
+        ],
+      },
+      {
+        label: "02 / What I Built",
+        heading: "데이터 패칭과 UI 구성",
+        body: [
+          "TMDB API를 통한 영화·TV 데이터 패칭 및 화면 구성을 담당했습니다. 콘텐츠 카테고리별로 섹션을 구분하고, 각 섹션에서 데이터를 독립적으로 패칭·캐싱하도록 설계했습니다.",
+          "React-Query로 데이터 상태 관리 및 캐싱을 최적화했습니다. 동일 데이터를 여러 컴포넌트에서 참조할 때 불필요한 중복 요청 없이 공유되도록 구성했습니다.",
+          "장르 필터링과 카테고리별 섹션화된 UI를 구현했습니다. 로딩 상태 및 오류 상황에 따른 사용자 피드백 UI도 함께 설계했습니다.",
+        ],
+      },
+      {
+        label: "03 / Challenge",
+        heading: "비동기 상태와 UX 피드백",
+        body: [
+          "외부 API 의존 특성상 로딩·오류 케이스를 세밀하게 처리해야 했습니다. 각 섹션마다 로딩 스켈레톤과 에러 바운더리를 분리 적용해, 한 섹션이 실패해도 전체 페이지가 깨지지 않도록 했습니다.",
+          "Recoil로 전역 상태(장르 필터, 검색어)를 관리하면서 React-Query의 서버 상태와 충돌 없이 분리하는 것이 핵심 과제였습니다. 클라이언트 상태(UI 제어)는 Recoil, 서버 데이터는 React-Query로 역할을 명확히 나눴습니다.",
+        ],
+      },
+    ],
+    takeaway:
+      "서버 상태와 클라이언트 상태를 명확히 분리할 때, 코드 복잡도가 낮아지고 UX 피드백도 자연스럽게 따라온다.",
+    next: "instagram",
+  },
+  {
+    slug: "instagram",
+    title: "Instagram",
+    subtitle: "Firebase 기반 SNS",
+    role: "단독 개발",
+    period: "2024.09 – 10",
+    stack: ["React", "Firebase", "React-Router-Dom", "Styled-Components"],
+    liveUrl: "https://ytg-instagram-5th.web.app",
+    sections: [
+      {
+        label: "01 / Overview",
+        heading: "실시간 SNS 플랫폼",
+        body: [
+          "Firebase를 이용해 사용자가 실시간으로 게시물을 업로드하고 관리할 수 있는 SNS 플랫폼을 구현했습니다.",
+          "게시물의 CRUD는 Firestore를 활용하여 구현했고, 프로필 페이지에서는 사용자의 업로드 기록과 정보를 볼 수 있도록 설계했습니다. 실시간 반영과 데이터 흐름을 중점으로 구성했습니다.",
+        ],
+      },
+      {
+        label: "02 / What I Built",
+        heading: "CRUD와 실시간 데이터 흐름",
+        body: [
+          "게시물 작성·수정·삭제 기능을 Firebase Firestore 기반으로 구현했습니다. 게시물 리스트와 상세 페이지에서 실시간으로 데이터를 확인할 수 있도록 Firestore 실시간 리스너를 연결했습니다.",
+          "사용자 프로필 페이지에 업로드한 게시물을 표시하고, Firebase 인증 기반 라우팅으로 미인증 사용자의 접근을 처리했습니다. 반응형 디자인으로 모바일·데스크탑 모두 대응했습니다.",
+        ],
+      },
+      {
+        label: "03 / UX Research",
+        heading: "사용자 리서치로 찾은 문제",
+        body: [
+          "실제 사용자 리서치를 기반으로 핵심 UX 문제 두 가지를 식별했습니다. 게시물 업로드 시 이미지를 하나씩만 올릴 수 있어 여러 장을 등록하려면 게시물을 반복 작성해야 했습니다.",
+          "게시물 수정 시 기존에 업로드된 이미지를 삭제하거나 교체하는 기능이 없어 수정 자체가 불가능한 경우가 있었습니다. 두 문제 모두 개선해 다중 이미지 등록과 수정 시 이미지 삭제 기능을 구현했습니다.",
+        ],
+      },
+    ],
+    takeaway:
+      "기능을 '동작하게' 만드는 것과 '실제로 쓸 수 있게' 만드는 것은 다르다. 사용자 리서치가 그 간격을 보여줬다.",
     next: "futsalmanager",
   },
 ];

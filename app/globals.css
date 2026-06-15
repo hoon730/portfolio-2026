@@ -2,11 +2,11 @@
 @import "pretendard/dist/web/static/pretendard.css";
 
 @theme {
-  /* ultra/default: 사용자 시그니처 블루 */
-  --color-background: #1d4ed8;
-  --color-foreground: #0a0a0a;
-  --color-accent:     #ffffff;
-  --color-muted:      rgba(0, 0, 0, 0.55);
+  /* ultra/default: 클라인 블루 + 크림 */
+  --color-background: #002fa7;
+  --color-foreground: #f2ece0;
+  --color-accent:     #ff5436;
+  --color-muted:      rgba(242, 236, 224, 0.5);
 
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
     system-ui, sans-serif;
@@ -29,10 +29,10 @@ body.light-mode {
 }
 
 body.ultra-mode {
-  --color-background: #1d4ed8;
-  --color-foreground: #0a0a0a;
-  --color-accent:     #ffffff;
-  --color-muted:      rgba(0, 0, 0, 0.55);
+  --color-background: #002fa7;
+  --color-foreground: #f2ece0;
+  --color-accent:     #ff5436;
+  --color-muted:      rgba(242, 236, 224, 0.5);
 }
 
 /* ── Base ── */

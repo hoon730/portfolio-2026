@@ -27,7 +27,7 @@ const PageTransitionContext = createContext<PageTransitionCtx>({
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const LEAVE_HOME = 720;
-const LEAVE_OTHER = 240;
+const LEAVE_OTHER = 140;
 
 export function PageTransitionProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
