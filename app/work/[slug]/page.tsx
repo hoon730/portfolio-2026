@@ -1,8 +1,8 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getCaseStudy, caseStudies } from "@/content/case-studies";
-import { TransitionLink } from "@/components/transition-link";
 import { Reveal } from "@/components/reveal";
+import { NextProject } from "@/components/next-project";
 
 export function generateStaticParams() {
   return caseStudies.map((c) => ({ slug: c.slug }));
@@ -179,40 +179,11 @@ export default async function WorkPage({ params }: Props) {
 
       {/* ── Next project ── */}
       {nextStudy && (
-        <section
-          style={{
-            marginTop: "20vh",
-            borderTop: "1px solid var(--color-muted)",
-            paddingTop: "10vh",
-            paddingLeft: "6vw",
-            paddingRight: "6vw",
-          }}
-        >
-          <div
-            className="text-[0.7rem] uppercase tracking-[0.18em] mb-5"
-            style={{ color: "var(--color-muted)" }}
-          >
-            next project
-          </div>
-          <TransitionLink href={`/work/${nextStudy.slug}`} className="block group">
-            <div
-              className="transition-opacity hover:opacity-60"
-              style={{
-                fontFamily: "var(--font-display), sans-serif",
-                fontSize: "clamp(2.5rem, 9vw, 8rem)",
-                lineHeight: 0.92,
-                letterSpacing: "0.005em",
-                textTransform: "uppercase",
-                color: "var(--color-foreground)",
-              }}
-            >
-              {nextStudy.title} →
-            </div>
-            <div className="mt-3 text-sm" style={{ color: "var(--color-muted)" }}>
-              {nextStudy.subtitle}
-            </div>
-          </TransitionLink>
-        </section>
+        <NextProject
+          slug={nextStudy.slug}
+          title={nextStudy.title}
+          subtitle={nextStudy.subtitle}
+        />
       )}
     </main>
   );

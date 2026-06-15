@@ -15,6 +15,9 @@ const MODES: { value: ColorMode; label: string; bg: string; fg: string }[] = [
 const MOVE = "transform 0.85s cubic-bezier(0.16, 1, 0.3, 1)";
 const LOGO_WORDS = ["YEOM", "DONG", "HOON"];
 const LOGO_BASE = 1.15;
+const RISE_AFTER_CONTENT = 900; // work: rise to top after the detail content is in
+const DROP_AFTER_LIST = 1600; // home: drop to bottom after the list pours in
+const SEQ_GAP = 450; // delay between the info fade and the name slide
 
 function SlideUp({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   return (
@@ -52,18 +55,81 @@ interface SiteHeaderProps {
 
 export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
   const { mode, setMode } = useColorMode();
-  const { navigateTo, leaving, currentPath } = usePageTransition();
+  const { navigateTo, currentPath } = usePageTransition();
   const isHome = currentPath === "/";
 
   const ui = mode === "light-mode" ? "#0a0a0a" : "#f2f2f2";
-  const atTop = !isHome || leaving;
 
-  // replay the entrance each time we land on home
+  const [atTop, setAtTop] = useState(!isHome); // block position
+  const [infoOpen, setInfoOpen] = useState(isHome); // role/location opacity
   const [homeKey, setHomeKey] = useState(0);
   const prevHome = useRef(isHome);
+  const atTopRef = useRef(atTop);
+  atTopRef.current = atTop;
+
+  // route-change timing
   useEffect(() => {
-    if (isHome && !prevHome.current) setHomeKey((k) => k + 1);
+    const ts: ReturnType<typeof setTimeout>[] = [];
+    if (isHome) {
+      if (!prevHome.current) {
+        setHomeKey((k) => k + 1);
+        setAtTop(true);
+        setInfoOpen(false);
+        ts.push(
+          setTimeout(() => {
+            setInfoOpen(true);
+            setAtTop(false);
+          }, DROP_AFTER_LIST)
+        );
+      } else {
+        setAtTop(false);
+        setInfoOpen(true);
+      }
+    } else {
+      setAtTop(false);
+      setInfoOpen(true);
+      ts.push(
+        setTimeout(() => {
+          const doc = document.documentElement;
+          const nb =
+            window.innerHeight + window.scrollY >= doc.scrollHeight - window.innerHeight;
+          setAtTop(!nb);
+          setInfoOpen(nb);
+        }, RISE_AFTER_CONTENT)
+      );
+    }
     prevHome.current = isHome;
+    return () => ts.forEach(clearTimeout);
+  }, [isHome]);
+
+  // scroll on work pages: reaching the bottom restores the home layout in sequence —
+  // the role/location fade in first, then the name + nav slide down.
+  useEffect(() => {
+    if (isHome) return;
+    let entered = false;
+    let seqT: ReturnType<typeof setTimeout> | undefined;
+    const enterT = setTimeout(() => {
+      entered = true;
+    }, RISE_AFTER_CONTENT);
+    const onScroll = () => {
+      if (!entered) return;
+      const doc = document.documentElement;
+      const nb =
+        window.innerHeight + window.scrollY >= doc.scrollHeight - window.innerHeight * 0.85;
+      if (nb && atTopRef.current) {
+        setInfoOpen(true); // 1) fade the rest in
+        seqT = setTimeout(() => setAtTop(false), SEQ_GAP); // 2) then slide name down
+      } else if (!nb && !atTopRef.current) {
+        setAtTop(true); // 1) slide name up
+        seqT = setTimeout(() => setInfoOpen(false), SEQ_GAP); // 2) then fade the rest out
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      clearTimeout(enterT);
+      if (seqT) clearTimeout(seqT);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, [isHome]);
 
   return (
@@ -72,14 +138,13 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
       <div
         className="fixed left-[3.75rem] top-0 z-40"
         style={{
-          width: "min(620px, 60vw)",
+          width: "min(660px, 64vw)",
           pointerEvents: "none",
-          // both targets are fixed vh (no self-height calc) so the move stays smooth
           transform: atTop ? "translateY(7.5vh)" : "translateY(64vh)",
           transition: MOVE,
         }}
       >
-        {/* Logo — YEOM / DONG / HOON */}
+        {/* Logo — YEOM / DONG / HOON (same size on every page) */}
         <a
           href="/"
           aria-label="YEOM DONG HOON — home"
@@ -88,10 +153,9 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
             pointerEvents: "auto",
             color: ui,
             fontFamily: "var(--font-display), sans-serif",
-            fontSize: atTop ? "1.2rem" : "2.5rem",
+            fontSize: "2.5rem",
             lineHeight: 0.85,
             letterSpacing: "0.005em",
-            transition: "font-size 0.85s cubic-bezier(0.16, 1, 0.3, 1)",
           }}
           onClick={(e) => {
             e.preventDefault();
@@ -119,56 +183,56 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
           )}
         </a>
 
-        {/* Role + contact — collapses when at top (work pages) */}
-        <motion.div
-          key={`meta-${homeKey}`}
-          initial={false}
-          animate={{ opacity: atTop ? 0 : 1, height: atTop ? 0 : "auto" }}
-          transition={{ duration: 0.5, ease: EASE_OUT_EXPO }}
-          style={{ overflow: "hidden" }}
-        >
-          <div
-            className="mt-6 flex gap-10 text-[0.875rem] leading-[1.2]"
-            style={{ color: ui, pointerEvents: "auto" }}
-          >
-            <div>
-              <SlideUp delay={1.75}>프론트엔드</SlideUp>
-              <SlideUp delay={1.8}>염동훈</SlideUp>
-            </div>
-            <div>
-              <SlideUp delay={1.86}>서울</SlideUp>
-              <SlideUp delay={1.91}>
-                <a href="mailto:ehdgns730@gmail.com">ehdgns730@gmail.com</a>
-              </SlideUp>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Nav — 01 about / 02 contact. Left-aligned; stays visible and rides to the top */}
-        <nav
-          key={`nav-${homeKey}`}
-          className="mt-5 flex flex-col gap-1 text-[0.875rem] leading-[1.2]"
+        {/* Info row: 01 about·02 contact | 프론트엔드·염동훈 | 대한민국 서울·email */}
+        <div
+          key={`row-${homeKey}`}
+          className="mt-7 flex gap-9 text-[0.875rem] leading-[1.3]"
           style={{ color: ui, pointerEvents: "auto" }}
         >
-          <SlideUp delay={1.97}>
-            <button
-              onClick={onAboutToggle}
-              className="inline-flex items-center gap-2 font-medium transition-opacity hover:opacity-60"
-            >
-              <span style={{ fontSize: "0.625rem", opacity: 0.85 }}>01</span>
-              <span>about</span>
-            </button>
+          {/* nav block — always visible, rides with the name */}
+          <SlideUp delay={1.55}>
+            <nav className="flex flex-col gap-1.5">
+              <button
+                onClick={onAboutToggle}
+                className="inline-flex items-center gap-2 font-medium transition-opacity hover:opacity-60"
+              >
+                <span style={{ fontSize: "0.625rem", opacity: 0.85 }}>01</span>
+                <span>about</span>
+              </button>
+              <a
+                href="mailto:ehdgns730@gmail.com"
+                className="inline-flex items-center gap-2 font-medium transition-opacity hover:opacity-60"
+              >
+                <span style={{ fontSize: "0.625rem", opacity: 0.85 }}>02</span>
+                <span>contact</span>
+              </a>
+            </nav>
           </SlideUp>
-          <SlideUp delay={2.02}>
-            <a
-              href="mailto:ehdgns730@gmail.com"
-              className="inline-flex items-center gap-2 font-medium transition-opacity hover:opacity-60"
-            >
-              <span style={{ fontSize: "0.625rem", opacity: 0.85 }}>02</span>
-              <span>contact</span>
-            </a>
-          </SlideUp>
-        </nav>
+
+          {/* role + location — fade independently of the name's move */}
+          <motion.div
+            initial={false}
+            animate={{ opacity: infoOpen ? 1 : 0 }}
+            transition={{ duration: 0.45, ease: EASE_OUT_EXPO }}
+            className="flex gap-9"
+            style={{ pointerEvents: infoOpen ? "auto" : "none" }}
+          >
+            <SlideUp delay={1.63}>
+              <div>
+                프론트엔드
+                <br />
+                염동훈
+              </div>
+            </SlideUp>
+            <SlideUp delay={1.71}>
+              <div>
+                대한민국 서울
+                <br />
+                <a href="mailto:ehdgns730@gmail.com">ehdgns730@gmail.com</a>
+              </div>
+            </SlideUp>
+          </motion.div>
+        </div>
       </div>
 
       {/* ── Color modes — bottom-right ── */}
@@ -195,7 +259,7 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
         ))}
       </div>
 
-      {/* ── Back button — top-right on work pages ── */}
+      {/* ── Back button — top-right while the work header is compact at the top ── */}
       <button
         aria-label="홈으로 돌아가기"
         onClick={() => navigateTo("/")}
@@ -208,9 +272,9 @@ export function SiteHeader({ onAboutToggle }: SiteHeaderProps) {
           border: `1.5px solid ${ui}`,
           color: ui,
           background: "transparent",
-          pointerEvents: isHome ? "none" : "auto",
-          opacity: isHome ? 0 : 1,
-          transform: isHome ? "scale(0.7)" : "scale(1)",
+          pointerEvents: atTop ? "auto" : "none",
+          opacity: atTop ? 1 : 0,
+          transform: atTop ? "scale(1)" : "scale(0.7)",
           transition:
             "opacity 0.5s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1)",
         }}

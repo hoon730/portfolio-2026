@@ -139,7 +139,7 @@ export function HomeStage() {
       >
         {projects.map((project, i) => {
           const lines = project.titleLines ?? [project.title];
-          const isOutline = hoverIdx === i;
+          const isOutline = hoverIdx === i; // rest = filled, hover = hollow outline
           return (
             <li
               key={project.slug}
